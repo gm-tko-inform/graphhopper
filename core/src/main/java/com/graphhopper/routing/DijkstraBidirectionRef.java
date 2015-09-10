@@ -203,7 +203,14 @@ public class DijkstraBidirectionRef extends AbstractBidirAlgo
             EdgeEntry ee = shortestWeightMap.get(traversalId);
             if (ee == null)
             {
-                ee = new EdgeEntry(iter.getEdge(), iter.getAdjNode(), tmpWeight);
+
+                if (reverse && iter.detach(false) instanceof VirtualEdgeIState) {
+                    ee = new EdgeEntry(iter.getEdge(), iter.getBaseNode(), tmpWeight);
+                }
+                else {
+                    ee = new EdgeEntry(iter.getEdge(), iter.getAdjNode(), tmpWeight);
+                }
+
                 ee.parent = currEdge;
                 shortestWeightMap.put(traversalId, ee);
                 prioQueue.add(ee);

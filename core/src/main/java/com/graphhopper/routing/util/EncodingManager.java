@@ -47,6 +47,7 @@ public class EncodingManager
     public static final String MOUNTAINBIKE = "mtb";
     public static final String FOOT = "foot";
     public static final String MOTORCYCLE = "motorcycle";
+    public static final String GARBAGE_VEHICLE = "gv";
 
     private final List<AbstractFlagEncoder> edgeEncoders = new ArrayList<AbstractFlagEncoder>();
 
@@ -157,6 +158,9 @@ public class EncodingManager
 
             else if (entry.equals(MOTORCYCLE))
                 fe = new MotorcycleFlagEncoder(entryVal);
+
+            else if (entry.equals(GARBAGE_VEHICLE))
+                fe = new GarbageVehicleFlagEncoder(entryVal);
 
             else
                 throw new IllegalArgumentException("entry in encoder list not supported " + entry);

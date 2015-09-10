@@ -3,17 +3,16 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.graphhopper</groupId>
     <artifactId>graphhopper-web</artifactId>
     <packaging>jar</packaging>
-    <version>0.4.1</version>
+    <version>1.0.0</version>
     <name>GraphHopper Web</name>
     <description>Example on how to use GraphHopper in a web-based application</description>
         
     <parent>
-        <groupId>com.graphhopper</groupId>
+        <groupId>ru.telecor.gm</groupId>
         <artifactId>graphhopper-parent</artifactId>    	
-        <version>0.4.1</version>
+        <version>1.0.0</version>
     </parent>
     <properties>
         <jetty.version>8.1.16.v20140903</jetty.version>
@@ -21,7 +20,7 @@
     
     <dependencies>
         <dependency>
-            <groupId>com.graphhopper</groupId>
+            <groupId>ru.telecor.gm</groupId>
             <artifactId>graphhopper</artifactId>
             <version>${project.parent.version}</version>            
         </dependency>

@@ -44,6 +44,25 @@ public class QueryResult
     private GHPoint3D snappedPoint;
     private Position snappedPosition;
 
+    private  boolean isFirst = false;
+    private boolean isLast = false;
+
+    public boolean isFirst() {
+        return isFirst;
+    }
+
+    public void setFirst(boolean first) {
+        isFirst = first;
+    }
+
+    public boolean isLast() {
+        return isLast;
+    }
+
+    public void setLast(boolean last) {
+        isLast = last;
+    }
+
     /**
      * Due to precision differences it is hard to define when something is exactly 90° or "on-node"
      * like TOWER or PILLAR or if it is more "on-edge" (EDGE). The default mechanism is to prefer

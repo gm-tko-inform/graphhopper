@@ -945,9 +945,11 @@ public class GraphHopper implements GraphHopperAPI
             // fall back to normal traversing
             tmpAlgoFactory = new RoutingAlgorithmFactorySimple();
             queryGraph = new QueryGraph(graph.getBaseGraph());
+            queryGraph.setEncoder(encoder);
         } else
         {
             queryGraph = new QueryGraph(graph);
+            queryGraph.setEncoder(encoder);
         }
 
         queryGraph.lookup(qResults);
@@ -958,7 +960,7 @@ public class GraphHopper implements GraphHopperAPI
         weighting = createTurnWeighting(weighting, queryGraph, encoder);
 
         double weightLimit = request.getHints().getDouble("defaultWeightLimit", defaultWeightLimit);
-        String algoStr = request.getAlgorithm().isEmpty() ? AlgorithmOptions.DIJKSTRA_BI : request.getAlgorithm();
+        String algoStr = request.getAlgorithm().isEmpty() ? AlgorithmOptions.DIJKSTRA : request.getAlgorithm();
         AlgorithmOptions algoOpts = AlgorithmOptions.start().
                 algorithm(algoStr).traversalMode(tMode).flagEncoder(encoder).weighting(weighting).
                 build();

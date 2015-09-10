@@ -3,19 +3,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.graphhopper</groupId>
-    <artifactId>graphhopper</artifactId>
+    <artifactId>graphhopper-gm</artifactId>
     <name>GraphHopper</name>
-    <version>0.4.1</version>
+    <version>1.0.4</version>
     <packaging>jar</packaging> 
     <description>
         GraphHopper is a fast and memory efficient Java road routing engine 
         working seamlessly with OpenStreetMap data.
     </description>
+
     <parent>
-        <groupId>com.graphhopper</groupId>
+        <groupId>ru.telecor.gm</groupId>
         <artifactId>graphhopper-parent</artifactId>    	
-        <version>0.4.1</version>
+        <version>1.0.0</version>
     </parent>
         
     <properties>  
@@ -30,7 +30,12 @@
             <distribution>repo</distribution>
             <comments>A business-friendly OSS license</comments>
         </license>
-    </licenses> 
+    </licenses>
+
+
+
+
+
     <dependencies>
         
         <!-- Trove is LGPL and slightly big (~3MB) -->
@@ -44,6 +49,25 @@
             <artifactId>slf4j-api</artifactId>
             <version>${slf4j.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.4.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.4.3</version>
+        </dependency>
+
+        <dependency>
+            <groupId>de.grundid.opendatalab</groupId>
+            <artifactId>geojson-jackson</artifactId>
+            <version>1.2</version>
+        </dependency>
+
         <!-- more recent and nicer but bigger
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -116,6 +140,19 @@
                         <execution>
                             <goals>
                                 <goal>test-jar</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <goals>
+                                <goal>jar</goal>
                             </goals>
                         </execution>
                     </executions>

@@ -129,7 +129,7 @@ class VirtualEdgeIState implements EdgeIteratorState, EdgeSkipIterState {
     @Override
     public String toString()
     {
-        return baseNode + "->" + adjNode;
+        return edgeId+ "; "+baseNode + "->" + adjNode;
     }
 
     @Override
@@ -191,5 +191,7 @@ class VirtualEdgeIState implements EdgeIteratorState, EdgeSkipIterState {
     {
         throw new UnsupportedOperationException("Not supported.");
     }
+
+
     
 }

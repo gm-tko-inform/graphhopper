@@ -3,15 +3,13 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.graphhopper</groupId>
+    <groupId>ru.telecor.gm</groupId>
     <artifactId>graphhopper-parent</artifactId>
     <name>GraphHopper Parent Project</name>
-    <version>0.4.1</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging> 
-    <url>http://graphhopper.com</url> 
-    <inceptionYear>2012</inceptionYear>
     <description>
-        Super pom of GraphHopper core, a fast Java road routing engine.
+        Modifed graphopper for gm
     </description>
     <parent>
         <groupId>org.sonatype.oss</groupId>
@@ -210,5 +208,13 @@
             </modules>
         </profile>
     </profiles>
+
+
+    <distributionManagement>
+        <repository>
+            <id>nexusTelecor</id>
+            <url>http://develop.telecor.ru/nexus/content/repositories/thirdparty</url>
+        </repository>
+    </distributionManagement>
     
 </project>

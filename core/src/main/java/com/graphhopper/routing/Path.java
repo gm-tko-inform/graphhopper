@@ -26,6 +26,7 @@ import com.graphhopper.util.*;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -83,6 +84,7 @@ public class Path
 
     protected void addEdge( int edge )
     {
+        List l;
         edgeIds.add(edge);
     }
 
@@ -216,10 +218,10 @@ public class Path
      */
     protected long calcMillis( double distance, long flags, boolean revert )
     {
-        if (revert && !encoder.isBackward(flags)
-                || !revert && !encoder.isForward(flags))
-            throw new IllegalStateException("Calculating time should not require to read speed from edge in wrong direction. "
-                    + "Reverse:" + revert + ", fwd:" + encoder.isForward(flags) + ", bwd:" + encoder.isBackward(flags));
+//        if (revert && !encoder.isBackward(flags)
+//                || !revert && !encoder.isForward(flags))
+//            throw new IllegalStateException("Calculating time should not require to read speed from edge in wrong direction. "
+//                    + "Reverse:" + revert + ", fwd:" + encoder.isForward(flags) + ", bwd:" + encoder.isBackward(flags));
 
         double speed = revert ? encoder.getReverseSpeed(flags) : encoder.getSpeed(flags);
         if (Double.isInfinite(speed) || Double.isNaN(speed) || speed < 0)

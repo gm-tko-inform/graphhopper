@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx creator="OSRM Routing Engine" version="1.1" xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 gpx.xsd">
+    <metadata>
+        <copyright author="Project OSRM">
+            <license>Data (c) OpenStreetMap contributors (ODbL)</license>
+        </copyright>
+    </metadata>
+    <rte>
+
+
+        <rtept lat="55.840353" lon="49.199553"/>
+        <rtept lat="55.841541" lon="49.200768"/>
+
+        <rtept lat="55.839495" lon="49.198635"/>
+        <rtept lat="55.839883" lon="49.199058"/>
+
+
+    </rte>
+</gpx>

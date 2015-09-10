@@ -17,6 +17,8 @@
  */
 package com.graphhopper.util;
 
+import com.graphhopper.storage.Graph;
+
 /**
  * Class to get EdgeIterator create it via graph.createEdgeExplorer(). Use one instance per thread.
  * <p/>
@@ -34,4 +36,5 @@ public interface EdgeExplorer
      * multiple threads or in a nested loop
      */
     EdgeIterator setBaseNode( int baseNode );
+
 }
