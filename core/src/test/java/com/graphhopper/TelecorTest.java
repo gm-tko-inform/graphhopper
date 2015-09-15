@@ -39,14 +39,16 @@ public class TelecorTest {
 
         graphHopper = new GraphHopper();
 
+//        String city = "nn";
+        String city = "kzn";
 
         graphHopper.setGraphHopperLocation("gh-problem")
                 .setInMemory()
                 .setEncodingManager(
                         new EncodingManager("gv|turnCosts=true")
                 )
-                .setOSMFile("D:\\Projects\\graphhopper\\data\\map_nn.pbf")
-                .setGraphHopperLocation("D:\\Projects\\graphhopper\\data\\cache")
+                .setOSMFile("D:\\Projects\\graphhopper\\data\\map_"+city+".pbf")
+                .setGraphHopperLocation("D:\\Projects\\graphhopper\\data\\cache_"+ city)
                 .setCHEnable(false)
                 .forServer();
 
@@ -77,6 +79,45 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.808127777047204, 49.1954630613327));
 //        ghPoints.add(new GHPoint(55.80916177824352, 49.1983437538147));
 
+        // Губкина (с одностороннего в обратку на двустороннее)
+//        ghPoints.add(new GHPoint(55.808127777047204, 49.1954630613327));
+//        ghPoints.add(new GHPoint(55.80819711326353, 49.19562935829162));
+
+
+        // Губкина с одностороннего через царицино
+//        ghPoints.add(new GHPoint(55.807895650554535,  49.195908308029175));
+//        ghPoints.add(new GHPoint(55.80916177824352, 49.1983437538147));
+
+        // Беломорская, одностороннее движение в обратку
+//        ghPoints.add(new GHPoint(55.86436705806156,  49.0846985578537));
+//        ghPoints.add(new GHPoint(55.8642135342982, 49.08549785614014));
+
+        // Беломорская, одностороннее движение с поворотом налево (на одном ребре)
+//        ghPoints.add(new GHPoint(55.86436705806156,  49.0846985578537));
+//        ghPoints.add(new GHPoint(55.86418945208418, 49.08443570137024));
+
+        // Беломорская, одностороннее движение с поворотом налево (разные рёбра)
+//        ghPoints.add(new GHPoint(55.86436705806156,  49.0846985578537));
+//        ghPoints.add(new GHPoint(55.86500221855593, 49.079438745975494));
+
+        // Беломорская, одностороннее движение с обеими точками по левую сторону
+//        ghPoints.add(new GHPoint(55.86419246236176,  49.084296226501465));
+//        ghPoints.add(new GHPoint(55.86500221855593, 49.079438745975494));
+
+        // Беломорская, одностороннее движение с обеими точками по правую сторону
+        ghPoints.add(new GHPoint(55.8643444810755,  49.084650278091424));
+        ghPoints.add(new GHPoint(55.864710226632674, 49.08297657966614));
+
+
+
+
+
+
+
+
+
+
+
         // Нагорный - утренняя
 //        ghPoints.add(new GHPoint(55.84831301444013, 49.22209739685058));
 //        ghPoints.add(new GHPoint(55.85387788266578, 49.24522876739502));
@@ -87,8 +128,22 @@ public class TelecorTest {
 
         // Нижний
         // Корейская 20, Гжатскяа, 4
-        ghPoints.add(new GHPoint(56.2750766356292, 43.9907866716385));
-        ghPoints.add(new GHPoint(56.2753029902075, 43.9913884084672));
+//        ghPoints.add(new GHPoint(56.2750766356292, 43.9907866716385));
+//        ghPoints.add(new GHPoint(56.2753029902075, 43.9913884084672));
+
+        // Тест на одном ребре (слева)
+//        ghPoints.add(new GHPoint(56.2623, 43.9770));
+//        ghPoints.add(new GHPoint(56.26281872653696, 43.97745877504349));
+
+        // Тест на одном ребре (справа с объездом)
+//        ghPoints.add(new GHPoint(56.2623, 43.9770));
+//        ghPoints.add(new GHPoint(56.26282319550621, 43.97770017385483));
+
+        // Произвольный
+//        ghPoints.add(new GHPoint(56.29425245558566, 44.00144577026367));
+//        ghPoints.add(new GHPoint(56.29368089320706, 44.02517795562744));
+
+
 
 
 
@@ -121,6 +176,7 @@ public class TelecorTest {
 
         feature = new Feature();
         feature.setProperty("route", "start");
+        feature.setProperty("marker-symbol", "triangle");
         feature.setGeometry(
                 new Point(ghPoints.get(0).getLon(), ghPoints.get(0).getLat())
         );

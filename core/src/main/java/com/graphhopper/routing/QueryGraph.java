@@ -17,6 +17,8 @@
  */
 package com.graphhopper.routing;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphhopper.routing.util.AllEdgesIterator;
 import com.graphhopper.routing.util.EdgeFilter;
 import com.graphhopper.routing.util.FlagEncoder;
@@ -35,11 +37,11 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 import gnu.trove.procedure.TIntProcedure;
 import gnu.trove.procedure.TObjectProcedure;
 import gnu.trove.set.hash.TIntHashSet;
+import org.geojson.Feature;
+import org.geojson.FeatureCollection;
+import org.geojson.Point;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * A class which is used to query the underlying graph with real GPS points. It does so by
@@ -69,6 +71,7 @@ public class QueryGraph implements Graph {
      * Store lat,lon of virtual tower nodes.
      */
     private PointList virtualNodes;
+    private static boolean SYSTEM_DEBUG = false;
 
     public FlagEncoder getEncoder() {
         return encoder;
@@ -272,8 +275,10 @@ public class QueryGraph implements Graph {
 
                     // add edges again to set adjacent edges for newVirtNodeId
                     if (addedEdges) {
-                        virtualEdges.add(virtualEdges.get(virtualEdges.size() - 2));
-                        virtualEdges.add(virtualEdges.get(virtualEdges.size() - 2));
+//                        virtualEdges.add(virtualEdges.get(virtualEdges.size() - 2));
+//                        virtualEdges.add(virtualEdges.get(virtualEdges.size() - 2));
+                        createEdges(prevPoint, prevWayIndex, fullPL.toGHPoint(fullPL.getSize() - 1), fullPL.getSize() - 2,
+                                fullPL, closestEdge, virtNodeId - 1, adjNode, reverseFlags, res);
                     }
 
                     addedEdges = true;
@@ -388,18 +393,6 @@ public class QueryGraph implements Graph {
         PointList baseReversePoints = basePoints.clone(true);
         double baseDistance = basePoints.calcDistance(Helper.DIST_PLANE);
 
-        boolean stopOutEdge = false;
-        boolean stopInEdge = false;
-//        if (nodeId == 41544 && prevNodeId == 29653 || nodeId == 29653 && prevNodeId == 41544) {
-//            stopOutEdge = true;
-//            System.out.println("  START POINT CONDITION = TRUE");
-//        }
-//
-//
-//        if (nodeId == 41545 && prevNodeId == 10153 || nodeId == 10153 && prevNodeId == 41545) {
-//            stopOutEdge = true;
-//            System.out.println("  FINISH POINT CONDITION = TRUE");
-//        }
 
         int virtEdgeId = mainEdges + virtualEdges.size();
 
@@ -407,37 +400,159 @@ public class QueryGraph implements Graph {
         VirtualEdgeIState baseEdge;
         VirtualEdgeIState baseReverseEdge;
 
-        if (res.getSnappedPoint().equals(prevSnapped)) {
-            baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                    isLeftTurn ? 5000 : baseDistance,
-                    encoder.setAccess(closestEdge.getFlags(), true, false),
-                    closestEdge.getName(),
-                    basePoints
-            );
 
-            baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                    !isLeftTurn ? 5000 : baseDistance,
-                    encoder.setAccess(reverseFlags, false, true),
-                    closestEdge.getName(),
-                    baseReversePoints);
+        boolean isBothNodeVirtual = prevNodeId >= mainNodes && nodeId >= mainNodes;
+
+
+        // encoder.isForward(closestEdge.getFlags()
+        if (res.getSnappedPoint().equals(prevSnapped)) {
+            if (isLeftTurn) {
+                baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
+                        5000,
+                        encoder.setAccess(closestEdge.getFlags(), true, false),
+                        closestEdge.getName(),
+                        basePoints
+                );
+                baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
+                        baseDistance,
+                        encoder.setAccess(reverseFlags, true, false),
+                        closestEdge.getName(),
+                        baseReversePoints
+                );
+            } else {
+                if (encoder.isForward(closestEdge.getFlags())) {
+                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
+                            baseDistance,
+                            encoder.setAccess(closestEdge.getFlags(), true, false),
+                            closestEdge.getName(),
+                            basePoints
+                    );
+                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
+                            5002,
+                            encoder.setAccess(reverseFlags, true, false),
+                            closestEdge.getName(),
+                            baseReversePoints
+                    );
+                }
+                else {
+                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
+                            5003,
+                            encoder.setAccess(closestEdge.getFlags(), true, false),
+                            closestEdge.getName(),
+                            basePoints
+                    );
+                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
+                            baseDistance,
+                            encoder.setAccess(reverseFlags, true, false),
+                            closestEdge.getName(),
+                            baseReversePoints
+                    );
+                }
+            }
+
         } else {
-            baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                    !isLeftTurn ? 5000 : baseDistance,
-                    encoder.setAccess(closestEdge.getFlags(), false, true),
-                    closestEdge.getName(),
-                    basePoints);
-            baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                    isLeftTurn ? 5000 : baseDistance,
-                    encoder.setAccess(reverseFlags, true, false),
-                    closestEdge.getName(),
-                    baseReversePoints);
+            if (isLeftTurn) {
+                if (encoder.isForward(closestEdge.getFlags())) {
+                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
+                            baseDistance,
+                            encoder.setAccess(closestEdge.getFlags(), true, false),
+                            closestEdge.getName(),
+                            basePoints);
+                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
+                            5004,
+                            encoder.setAccess(reverseFlags, true, false),
+                            closestEdge.getName(),
+                            baseReversePoints
+                    );
+                } else {
+                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
+                            5005,
+                            encoder.setAccess(closestEdge.getFlags(), true, false),
+                            closestEdge.getName(),
+                            basePoints);
+                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
+                            baseDistance,
+                            encoder.setAccess(reverseFlags, true, false),
+                            closestEdge.getName(),
+                            baseReversePoints
+                    );
+                }
+            } else {
+                baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
+                        5006,
+                        encoder.setAccess(closestEdge.getFlags(), true, false),
+                        closestEdge.getName(),
+                        basePoints);
+                baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
+                        baseDistance,
+                        encoder.setAccess(reverseFlags, true, false),
+                        closestEdge.getName(),
+                        baseReversePoints
+                );
+            }
+
+
         }
 
 
+//        if (isBothNodeVirtual) {
+//            virtualEdges.add(baseReverseEdge);
+//            virtualEdges.add(baseEdge);
+//        }
+//        else {
         virtualEdges.add(baseEdge);
         virtualEdges.add(baseReverseEdge);
+//        }
+
+
+//        Set<EdgeIteratorState> tempSet = new HashSet<EdgeIteratorState>();
+//        Iterator<EdgeIteratorState> it = virtualEdges.iterator();
+//        while (it.hasNext()) {
+//            EdgeIteratorState state = it.next();
+//            if (!tempSet.add(state)) it.remove();
+//        }
+
+
 //        System.out.println("test");
-//        System.out.println();
+        if (SYSTEM_DEBUG) {
+            System.out.println();
+            if (virtualEdges.size() == 8) {
+                Set<Integer> nodes = new HashSet<Integer>();
+                Map<Integer, Integer> idToNumber = new HashMap<Integer, Integer>();
+
+                FeatureCollection featureCollection = new FeatureCollection();
+                int i = 1;
+                for (EdgeIteratorState virtualEdge : virtualEdges) {
+                    if (nodes.add(virtualEdge.getBaseNode())) {
+                        Feature feature = new Feature();
+                        feature.setGeometry(
+                                new Point(
+                                        virtualEdge.fetchWayGeometry(1).getLon(0),
+                                        virtualEdge.fetchWayGeometry(1).getLat(0)
+                                )
+                        );
+                        feature.setProperty("nodeId", virtualEdge.getBaseNode());
+                        idToNumber.put(virtualEdge.getBaseNode(), i);
+                        feature.setProperty("marker-symbol", i++);
+                        if (virtualEdge.getBaseNode() >= mainNodes) {
+                            feature.setProperty("marker-color", "#ff0000");
+                        }
+                        featureCollection.add(feature);
+                    }
+                }
+                ObjectMapper MAPPER = new ObjectMapper();
+                String geoJson = null;
+                try {
+                    geoJson = MAPPER.writer().writeValueAsString(featureCollection);
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
+                }
+                System.out.println(geoJson);
+                for (EdgeIteratorState virtualEdge : virtualEdges) {
+                    System.out.println("  " + idToNumber.get(virtualEdge.getBaseNode()) + " -> " + idToNumber.get(virtualEdge.getAdjNode()) + " (" + virtualEdge.getBaseNode() + " -> " + virtualEdge.getAdjNode() + ") distance = " + virtualEdge.getDistance());
+                }
+            }
+        }
     }
 
     @Override
@@ -564,11 +679,51 @@ public class QueryGraph implements Graph {
         final TIntObjectMap<VirtualEdgeIterator> node2EdgeMap
                 = new TIntObjectHashMap<VirtualEdgeIterator>(queryResults.size() * 3);
 
+
         final EdgeExplorer mainExplorer = mainGraph.createEdgeExplorer(edgeFilter);
         final TIntHashSet towerNodesToChange = new TIntHashSet(queryResults.size());
 
         // 1. virtualEdges should also get fresh EdgeIterators on every createEdgeExplorer call!        
         for (int i = 0; i < queryResults.size(); i++) {
+            VirtualEdgeIterator virtEdgeIter;
+
+            // vselivanov fix
+            // Use ALL virtual edges, where base node pint is query point
+            int virtualNode = -1;
+            for (EdgeIteratorState virtualEdge : virtualEdges) {
+                QueryResult queryResult = queryResults.get(i);
+                PointList basePoints = virtualEdge.fetchWayGeometry(1);
+                // If start base point equals query point
+                if (basePoints.getLat(0) == queryResult.getSnappedPoint().getLat() && basePoints.getLon(0) == queryResult.getSnappedPoint().getLon()) {
+                    virtEdgeIter = node2EdgeMap.get(virtualEdge.getBaseNode());
+                    if (virtEdgeIter == null) {
+                        virtEdgeIter = new VirtualEdgeIterator(virtualEdges.size());
+                    }
+                    virtEdgeIter.add(virtualEdge);
+                    node2EdgeMap.put(virtualEdge.getBaseNode(), virtEdgeIter);
+                }
+
+                PointList adjPoints = virtualEdge.fetchWayGeometry(2);
+                if (adjPoints.getLat(adjPoints.size() - 1) == queryResult.getSnappedPoint().getLat() && adjPoints.getLon(adjPoints.size() - 1) == queryResult.getSnappedPoint().getLon()) {
+                    virtEdgeIter = node2EdgeMap.get(virtualEdge.getBaseNode());
+                    if (virtEdgeIter == null) {
+                        virtEdgeIter = new VirtualEdgeIterator(virtualEdges.size());
+                    }
+                    virtEdgeIter.add(virtualEdge);
+
+                    if (edgeFilter.accept(virtualEdge)) {
+                        node2EdgeMap.put(virtualEdge.getBaseNode(), virtEdgeIter);
+                    }
+                }
+            }
+
+
+
+
+
+
+
+            /*
             int virtNode = mainNodes + i;
 
             // create outgoing edges
@@ -645,6 +800,8 @@ public class QueryGraph implements Graph {
                 }
             }
 
+            */
+
 
         }
 
@@ -663,8 +820,25 @@ public class QueryGraph implements Graph {
             @Override
             public EdgeIterator setBaseNode(int baseNode) {
                 VirtualEdgeIterator iter = node2EdgeMap.get(baseNode);
-                if (iter != null)
+                if (iter != null) {
+                    if (baseNode < mainNodes) {
+                        EdgeIterator baseIter = mainExplorer.setBaseNode(baseNode);
+                        while (baseIter.next()) {
+                            iter.add(new VirtualEdgeIState(
+                                    baseIter.getEdge(),
+                                    baseIter.getBaseNode(),
+                                    baseIter.getAdjNode(),
+                                    baseIter.getDistance(),
+                                    baseIter.getFlags(),
+                                    baseIter.getName(),
+                                    baseIter.fetchWayGeometry(3)
+                            ));
+                            iter.add(baseIter);
+                        }
+                    }
                     return iter.reset();
+                }
+
 
                 return mainExplorer.setBaseNode(baseNode);
             }
@@ -687,7 +861,7 @@ public class QueryGraph implements Graph {
 //                : virtualEdges.get(virtNode * 4 + VE_ADJ_REV);
 
 //        if (filter.accept(state))
-            existingIter.add(state);
+        existingIter.add(state);
     }
 
     void fillVirtualEdges(TIntObjectMap<VirtualEdgeIterator> node2Edge, int towerNode, EdgeExplorer mainExpl) {
