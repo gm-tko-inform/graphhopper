@@ -238,15 +238,21 @@ public class GarbageVehicleFlagEncoder extends AbstractFlagEncoder {
                 int lanes = Integer.valueOf(way.getTag("lanes"));
                 edge.setAdditionalField(lanes);
             } catch (Exception e) {
-                StringTokenizer t = new StringTokenizer(way.getTag("lanes"), ",;");
-                String n = "0";
-                while (t.hasMoreElements()) {
-                    n = (String) t.nextElement();
-                }
-                edge.setAdditionalField(Integer.valueOf(way.getTag(n)));
+                try {
+                    StringTokenizer t = new StringTokenizer(way.getTag("lanes"), ",;");
+                    String n = "0";
+                    while (t.hasMoreElements()) {
+                        n = (String) t.nextElement();
+                    }
+                    edge.setAdditionalField(Integer.valueOf(way.getTag(n)));
 
-                System.err.println(e.getMessage());
-                e.printStackTrace();
+                } catch (Exception e1) {
+                    System.err.println(e.getMessage());
+                    e.printStackTrace();
+                    System.err.println(e1.getMessage());
+                    e1.printStackTrace();
+                    // empty
+                }
             }
         }
     }
