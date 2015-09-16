@@ -274,11 +274,40 @@ public class QueryGraph implements Graph {
                     virtualNodes.add(currSnapped.lat, currSnapped.lon, currSnapped.ele);
 
                     // add edges again to set adjacent edges for newVirtNodeId
+                    // Если несколько точек запроса лежат на одном ребре, то
                     if (addedEdges) {
-//                        virtualEdges.add(virtualEdges.get(virtualEdges.size() - 2));
-//                        virtualEdges.add(virtualEdges.get(virtualEdges.size() - 2));
-                        createEdges(prevPoint, prevWayIndex, fullPL.toGHPoint(fullPL.getSize() - 1), fullPL.getSize() - 2,
-                                fullPL, closestEdge, virtNodeId - 1, adjNode, reverseFlags, res);
+                        // [end] -- [...] -- [res.snapped] -- [prevRes.snapped] -- [...] -- [start]
+
+                        // Добавляю связь с крайними точками. Предыдущую от текущего разреза - к концу вершины
+                        // [prevRes.snapped] to [end]
+                        createEdges(
+                                prevPoint,                              // prevSnapped
+                                prevWayIndex,
+                                fullPL.toGHPoint(fullPL.getSize() - 1), // curSnapped
+                                fullPL.getSize() - 2,
+                                fullPL,
+                                closestEdge,
+                                virtNodeId - 1,                         // prevNodeId
+                                adjNode,                                // curNodeId
+                                reverseFlags,
+                                results.get(counter - 1)
+                        );
+
+                        // И текущую к первой точке
+                        // [res.snapped] to [start]
+                        createEdges(
+                                fullPL.toGHPoint(0),                    // prevSnapped
+                                0,
+                                res.getSnappedPoint(),                  // curSnapped
+                                res.getWayIndex(),
+                                fullPL,
+                                closestEdge,
+                                baseNode,                               // prevNodeId
+                                virtNodeId,                             // curNodeId
+                                reverseFlags,
+                                res
+                        );
+
                     }
 
                     addedEdges = true;
@@ -328,10 +357,12 @@ public class QueryGraph implements Graph {
                 return 0;
             } else if (isVirtualEdge(edgeFrom) || isVirtualEdge(edgeTo)) {
                 if (isVirtualEdge(edgeFrom)) {
-                    edgeFrom = queryResults.get((edgeFrom - mainEdges) / 4).getClosestEdge().getEdge();
+//                    edgeFrom = queryResults.get((edgeFrom - mainEdges) / 4).getClosestEdge().getEdge();
+                    edgeFrom = virtualEdgeIdToBaseEdge.get(edgeFrom).getEdge();
                 }
                 if (isVirtualEdge(edgeTo)) {
-                    edgeTo = queryResults.get((edgeTo - mainEdges) / 4).getClosestEdge().getEdge();
+//                    edgeTo = queryResults.get((edgeTo - mainEdges) / 4).getClosestEdge().getEdge();
+                    edgeTo = virtualEdgeIdToBaseEdge.get(edgeTo).getEdge();
                 }
                 return mainTurnExtension.getTurnCostFlags(edgeFrom, nodeVia, edgeTo);
 
@@ -341,182 +372,234 @@ public class QueryGraph implements Graph {
         }
     }
 
+    private enum TriangleType {
+        IN,
+        OUT
+    }
+
+    Map<Integer, GHPoint> debugPointInfo = new HashMap<Integer, GHPoint>();
+    List<GHPoint> debugQueryPoints = new ArrayList<GHPoint>();
+    Map<Integer, EdgeIteratorState> virtualEdgeIdToBaseEdge = new HashMap<Integer, EdgeIteratorState>();
+
+    private PointList reverseClonePoints(PointList src) {
+        PointList result = new PointList(src.getSize(), src.is3D());
+        for (int i = src.getSize() - 1; i >= 0; i--) {
+            result.add(src.getLat(i), src.getLon(i), src.getEle(i));
+        }
+        return result;
+    }
+
+    private static final int BASE_ROAD_WIDE = 6;
+
+
+    GHPoint lastQueryPoint = null;
+
     private void createEdges(GHPoint3D prevSnapped, int prevWayIndex, GHPoint3D currSnapped, int wayIndex,
                              PointList fullPL, EdgeIteratorState closestEdge,
                              int prevNodeId, int nodeId, long reverseFlags, QueryResult res) {
 
-//        System.out.println("createEdges: res = " + res);
-//        System.out.println("  prevNoteId = " + prevNodeId + "; nodeId = " + nodeId);
-//        System.out.println("  prevSnapped = " + prevSnapped + "; currSnapped = " + currSnapped);
-//        System.out.println("  prevWayIndex = " + prevWayIndex + "; wayIndex = " + wayIndex);
-//        System.out.println("  closestEdge = " + closestEdge);
-        boolean isLeftTurn = false;
-        if (res != null) {
-//            System.out.println("  queryPoint = " + res.getQueryPoint());
-//            System.out.println("  isFirst = " + res.isFirst());
-//            System.out.println("  isLast = " + res.isLast());
 
-            GHPoint3D pointB = res.getSnappedPoint();
-            GHPoint3D pointC = pointB.equals(currSnapped) ? prevSnapped : currSnapped;
-            GHPoint pointA = res.getQueryPoint();
-
-            // Поиск косого произведения
-            GHPoint vectorA = new GHPoint(pointC.getLon() - pointB.getLon(), pointC.getLat() - pointB.getLat());
-            GHPoint vectorB = new GHPoint(pointA.getLon() - pointB.getLon(), pointA.getLat() - pointB.getLat());
-
-            double fiberBundle = vectorA.getLon() * vectorB.getLat() - vectorB.getLon() * vectorA.getLat();
-
-//            System.out.println("    pointA: " + pointA);
-//            System.out.println("    pointB: " + pointB);
-//            System.out.println("    pointC: " + pointC);
-
-//            System.out.println("   fiberBundle = " + fiberBundle);
-
-            isLeftTurn = (fiberBundle < 0);
-//            if (isLeftTurn && res.isFirst()) {
-//                System.out.println("  !!!!!!!!!! NEED CLOSE DEPARTURE !!!!!!!!!!!!");
-//            } else if (!isLeftTurn && res.isLast()) {
-//                System.out.println("  !!!!!!!!!! NEED CLOSE ARRIVE !!!!!!!!!!!!");
-//            }
-        }
-
+        // Формирую точки виртуального ребра
+        PointList basePoints;
+        PointList reversePoints;
 
         int max = wayIndex + 1;
         // basePoints must have at least the size of 2 to make sure fetchWayGeometry(3) returns at least 2
-        PointList basePoints = new PointList(max - prevWayIndex + 1, mainNodeAccess.is3D());
-        basePoints.add(prevSnapped.lat, prevSnapped.lon, prevSnapped.ele);
+        PointList edgePoints = new PointList(max - prevWayIndex + 1, mainNodeAccess.is3D());
+        edgePoints.add(prevSnapped.lat, prevSnapped.lon, prevSnapped.ele);
         for (int i = prevWayIndex; i < max; i++) {
-            basePoints.add(fullPL, i);
+            edgePoints.add(fullPL, i);
         }
-        basePoints.add(currSnapped.lat, currSnapped.lon, currSnapped.ele);
+        edgePoints.add(currSnapped.lat, currSnapped.lon, currSnapped.ele);
 
-        PointList baseReversePoints = basePoints.clone(true);
-        double baseDistance = basePoints.calcDistance(Helper.DIST_PLANE);
+
+        // Направление рёбер
+        // Устанавливаю правило, что From-To всегда равно из точки ВЕРШИНА в точку ПРОЕКЦИЯ
+        // то есть ребро треугольника CB, и оно же всегда является БАЗОЙ, а ребро BC - реверсом
+        int nodeC;   // Вершина C
+        int nodeB;   // Вершина B
+
+        // Формирую треугольник ABC (ЗАПРОС-ПРОЕКЦИЯ-ВЕРШИНА)
+        // Точка A - всегда точка запроса (ЗАПРОС)
+        // Точка B - всегда проекция запроса на ребро, то есть виртуальная вершина (ПРОЕКЦИЯ)
+        // Точка C - всегда вершина (ВЕРШИНА)
+        GHPoint pointA = res.getQueryPoint();
+        GHPoint3D pointB = res.getSnappedPoint();
+        GHPoint3D pointC;
+        boolean isForward;
+        boolean isBackward;
+        if (pointB.equals(currSnapped)) {
+            pointC = prevSnapped;
+            nodeC = prevNodeId;
+            nodeB = nodeId;
+            basePoints = edgePoints;
+            reversePoints = reverseClonePoints(edgePoints);
+            isForward = encoder.isForward(closestEdge.getFlags());
+            isBackward = encoder.isBackward(closestEdge.getFlags());
+        } else {
+            pointC = currSnapped;
+            nodeC = nodeId;
+            nodeB = prevNodeId;
+            reversePoints = edgePoints;
+            basePoints = reverseClonePoints(edgePoints);
+            isForward = encoder.isBackward(closestEdge.getFlags());
+            isBackward = encoder.isForward(closestEdge.getFlags());
+        }
+
+        debugPointInfo.put(nodeC, pointC);
+        debugPointInfo.put(nodeB, pointB);
+        if (SYSTEM_DEBUG) {
+            System.out.println("nodeC = " + nodeC + "; pointC = " + pointC);
+            System.out.println("nodeB = " + nodeB + "; pointB = " + pointB);
+        }
+
+        if (!debugQueryPoints.contains(pointA)) {
+            debugQueryPoints.add(pointA);
+        }
+
+        // Поиск косого произведения
+        GHPoint vectorA = new GHPoint(pointC.getLon() - pointB.getLon(), pointC.getLat() - pointB.getLat());
+        GHPoint vectorB = new GHPoint(pointA.getLon() - pointB.getLon(), pointA.getLat() - pointB.getLat());
+        double fiberBundle = vectorA.getLon() * vectorB.getLat() - vectorB.getLon() * vectorA.getLat();
+
+        // Определяю признак того, что угол ABC
+        boolean isConnerABCLeft = fiberBundle < 0;
+
+        if (SYSTEM_DEBUG) {
+            System.out.println(" from " + nodeC + " to " + nodeB + " type " + isConnerABCLeft + " lanes " + closestEdge.getAdditionalField());
+        }
+
+
+        // Логирую точки ребра
+        if (SYSTEM_DEBUG) {
+            int i = 1;
+            FeatureCollection featureCollection = new FeatureCollection();
+            for (GHPoint3D basePoint : basePoints) {
+                Feature feature = new Feature();
+                feature.setGeometry(new Point(basePoint.getLon(), basePoint.getLat()));
+                feature.setProperty("marker-symbol", "" + i++);
+                feature.setProperty("marker-size", "small");
+                feature.setProperty("marker-color", "#ccffcc");
+                featureCollection.add(feature);
+            }
+
+            ObjectMapper MAPPER = new ObjectMapper();
+            String geoJson = null;
+            try {
+                geoJson = MAPPER.writer().writeValueAsString(featureCollection);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            System.out.println(geoJson);
+
+            i = 1;
+            featureCollection = new FeatureCollection();
+            for (GHPoint3D basePoint : reversePoints) {
+                Feature feature = new Feature();
+                feature.setGeometry(new Point(basePoint.getLon(), basePoint.getLat()));
+                feature.setProperty("marker-symbol", "" + i++);
+                feature.setProperty("marker-size", "small");
+                feature.setProperty("marker-color", "#ccffcc");
+                featureCollection.add(feature);
+            }
+
+            geoJson = null;
+            try {
+                geoJson = MAPPER.writer().writeValueAsString(featureCollection);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+            System.out.println(geoJson);
+        }
+
+        double baseDistance = edgePoints.calcDistance(Helper.DIST_PLANE);
 
 
         int virtEdgeId = mainEdges + virtualEdges.size();
 
         // edges between base and snapped point
-        VirtualEdgeIState baseEdge;
-        VirtualEdgeIState baseReverseEdge;
-
+        VirtualEdgeIState baseEdge = null;          // Всегда ребро из базовой точки (C) в проекцию (B)
+        VirtualEdgeIState baseReverseEdge = null;   // Обратное ребро из проекции (B) в базовую точку (C)
 
         boolean isBothNodeVirtual = prevNodeId >= mainNodes && nodeId >= mainNodes;
 
+        // Если количество полос польше 2, то закрываем левые повороты бесконечностью, иначе добавляем ширину дороги
+        boolean needCloseRoadCross = closestEdge.getAdditionalField() > 2;
+        int roadWide = BASE_ROAD_WIDE;
 
-        // encoder.isForward(closestEdge.getFlags()
-        if (res.getSnappedPoint().equals(prevSnapped)) {
-            if (isLeftTurn) {
-                baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                        5000,
-                        encoder.setAccess(closestEdge.getFlags(), true, false),
-                        closestEdge.getName(),
-                        basePoints
-                );
-                baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                        baseDistance,
-                        encoder.setAccess(reverseFlags, true, false),
-                        closestEdge.getName(),
-                        baseReversePoints
-                );
-            } else {
-                if (encoder.isForward(closestEdge.getFlags())) {
-                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                            baseDistance,
-                            encoder.setAccess(closestEdge.getFlags(), true, false),
-                            closestEdge.getName(),
-                            basePoints
-                    );
-                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                            5002,
-                            encoder.setAccess(reverseFlags, true, false),
-                            closestEdge.getName(),
-                            baseReversePoints
-                    );
+        double baseEdgeDistance = baseDistance;
+        double reverseEdgeDistance = baseDistance;
+
+        // Если движение по базовому ребру CB разрешено в обе стороны
+        if (isForward && isBackward) {
+            // Если не обе вершины виртуальные, или обе вирнуальные, но нет данных по первой точке
+            // -- нет данных по первой точке - на всякий случай backdoor для исключения
+            if (!isBothNodeVirtual || lastQueryPoint == null) {
+                // Если угол левый, то закрываем ребро BC (реверс)
+                if (isConnerABCLeft) {
+                    baseEdgeDistance = baseDistance;
+                    reverseEdgeDistance = needCloseRoadCross ? 1000001 : baseDistance + roadWide;
                 }
+                // Если угол правый, то закрываем ребро CB (базовое)
                 else {
-                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                            5003,
-                            encoder.setAccess(closestEdge.getFlags(), true, false),
-                            closestEdge.getName(),
-                            basePoints
-                    );
-                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                            baseDistance,
-                            encoder.setAccess(reverseFlags, true, false),
-                            closestEdge.getName(),
-                            baseReversePoints
-                    );
+                    baseEdgeDistance = needCloseRoadCross ? 1000002 : baseDistance + roadWide;
+                    reverseEdgeDistance = baseDistance;
                 }
             }
+            // Если обе вершины виртуальные, то необходимо учитывать оба угла
+            // Выезд с первой вершины и въезд на вторую
+            else {
+                // Поиск косого произведения
+                vectorA = new GHPoint(pointB.getLon() - pointC.getLon(), pointB.getLat() - pointC.getLat());
+                vectorB = new GHPoint(lastQueryPoint.getLon() - pointC.getLon(), lastQueryPoint.getLat() - pointC.getLat());
+                fiberBundle = vectorA.getLon() * vectorB.getLat() - vectorB.getLon() * vectorA.getLat();
+                boolean isConner2Left = fiberBundle < 0;
 
-        } else {
-            if (isLeftTurn) {
-                if (encoder.isForward(closestEdge.getFlags())) {
-                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                            baseDistance,
-                            encoder.setAccess(closestEdge.getFlags(), true, false),
-                            closestEdge.getName(),
-                            basePoints);
-                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                            5004,
-                            encoder.setAccess(reverseFlags, true, false),
-                            closestEdge.getName(),
-                            baseReversePoints
-                    );
-                } else {
-                    baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                            5005,
-                            encoder.setAccess(closestEdge.getFlags(), true, false),
-                            closestEdge.getName(),
-                            basePoints);
-                    baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                            baseDistance,
-                            encoder.setAccess(reverseFlags, true, false),
-                            closestEdge.getName(),
-                            baseReversePoints
-                    );
+                if (isConnerABCLeft && isConner2Left) {
+                    baseEdgeDistance = needCloseRoadCross ? 1000003 : baseDistance + roadWide;
+                    reverseEdgeDistance = needCloseRoadCross ? 1000003 : baseDistance + roadWide;
+                } else if (isConnerABCLeft && !isConner2Left) {
+                    baseEdgeDistance = baseDistance;
+                    reverseEdgeDistance = needCloseRoadCross ? 1000004 : baseDistance + 2 * roadWide;
+                } else if (!isConnerABCLeft && isConner2Left) {
+                    baseEdgeDistance = needCloseRoadCross ? 1000005 : baseDistance + 2 * roadWide;
+                    reverseEdgeDistance = baseDistance;
+                } else if (!isConnerABCLeft && !isConner2Left) {
+                    baseEdgeDistance = needCloseRoadCross ? 1000006 : baseDistance + roadWide;
+                    reverseEdgeDistance = needCloseRoadCross ? 1000006 : baseDistance + roadWide;
                 }
-            } else {
-                baseEdge = new VirtualEdgeIState(virtEdgeId++, prevNodeId, nodeId,
-                        5006,
-                        encoder.setAccess(closestEdge.getFlags(), true, false),
-                        closestEdge.getName(),
-                        basePoints);
-                baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeId, prevNodeId,
-                        baseDistance,
-                        encoder.setAccess(reverseFlags, true, false),
-                        closestEdge.getName(),
-                        baseReversePoints
-                );
             }
-
-
+        }
+        // Движение по базовому ребру CB разрешено только в направлении CB
+        else if (isForward) {
+            baseEdgeDistance = baseDistance;
+            reverseEdgeDistance = 1000007;
+        }
+        // Движение по базовому CB разрешено только в направлении BC
+        else if (isBackward) {
+            baseEdgeDistance = 1000008;
+            reverseEdgeDistance = baseDistance;
         }
 
 
-//        if (isBothNodeVirtual) {
-//            virtualEdges.add(baseReverseEdge);
-//            virtualEdges.add(baseEdge);
-//        }
-//        else {
+        baseEdge = new VirtualEdgeIState(virtEdgeId, nodeC, nodeB,
+                baseEdgeDistance,
+                encoder.setAccess(closestEdge.getFlags(), true, false), closestEdge.getName(), basePoints
+        );
+        virtualEdgeIdToBaseEdge.put(virtEdgeId, res.getClosestEdge());
+        virtEdgeId++;
+        baseReverseEdge = new VirtualEdgeIState(virtEdgeId, nodeB, nodeC,
+                reverseEdgeDistance,
+                encoder.setAccess(reverseFlags, true, false), closestEdge.getName(), reversePoints
+        );
+        virtualEdgeIdToBaseEdge.put(virtEdgeId, res.getClosestEdge());
+
         virtualEdges.add(baseEdge);
         virtualEdges.add(baseReverseEdge);
-//        }
 
-
-//        Set<EdgeIteratorState> tempSet = new HashSet<EdgeIteratorState>();
-//        Iterator<EdgeIteratorState> it = virtualEdges.iterator();
-//        while (it.hasNext()) {
-//            EdgeIteratorState state = it.next();
-//            if (!tempSet.add(state)) it.remove();
-//        }
-
-
-//        System.out.println("test");
         if (SYSTEM_DEBUG) {
             System.out.println();
-            if (virtualEdges.size() == 8) {
+            if (virtualEdges.size() >= 8) {
                 Set<Integer> nodes = new HashSet<Integer>();
                 Map<Integer, Integer> idToNumber = new HashMap<Integer, Integer>();
 
@@ -527,8 +610,8 @@ public class QueryGraph implements Graph {
                         Feature feature = new Feature();
                         feature.setGeometry(
                                 new Point(
-                                        virtualEdge.fetchWayGeometry(1).getLon(0),
-                                        virtualEdge.fetchWayGeometry(1).getLat(0)
+                                        debugPointInfo.get(virtualEdge.getBaseNode()).getLon(),
+                                        debugPointInfo.get(virtualEdge.getBaseNode()).getLat()
                                 )
                         );
                         feature.setProperty("nodeId", virtualEdge.getBaseNode());
@@ -540,6 +623,21 @@ public class QueryGraph implements Graph {
                         featureCollection.add(feature);
                     }
                 }
+
+                char c = 'a';
+                for (GHPoint debugQueryPoint : debugQueryPoints) {
+                    Feature feature = new Feature();
+                    feature.setGeometry(
+                            new Point(
+                                    debugQueryPoint.getLon(),
+                                    debugQueryPoint.getLat()
+                            )
+                    );
+                    feature.setProperty("marker-symbol", "" + c++);
+                    feature.setProperty("marker-color", "#00ff00");
+                    featureCollection.add(feature);
+                }
+
                 ObjectMapper MAPPER = new ObjectMapper();
                 String geoJson = null;
                 try {
@@ -549,10 +647,14 @@ public class QueryGraph implements Graph {
                 }
                 System.out.println(geoJson);
                 for (EdgeIteratorState virtualEdge : virtualEdges) {
-                    System.out.println("  " + idToNumber.get(virtualEdge.getBaseNode()) + " -> " + idToNumber.get(virtualEdge.getAdjNode()) + " (" + virtualEdge.getBaseNode() + " -> " + virtualEdge.getAdjNode() + ") distance = " + virtualEdge.getDistance());
+                    System.out.println("  " + idToNumber.get(virtualEdge.getBaseNode()) + " -> " + idToNumber.get(virtualEdge.getAdjNode()) + " (" + virtualEdge.getBaseNode() + " -> " + virtualEdge.getAdjNode() + ") "
+                            + "distance = " + virtualEdge.getDistance()
+                    );
                 }
             }
         }
+
+        lastQueryPoint = res.getQueryPoint();
     }
 
     @Override
@@ -716,91 +818,6 @@ public class QueryGraph implements Graph {
                     }
                 }
             }
-
-
-
-
-
-
-
-            /*
-            int virtNode = mainNodes + i;
-
-            // create outgoing edges
-            VirtualEdgeIterator virtEdgeIter = new VirtualEdgeIterator(4);
-            EdgeIteratorState baseRevEdge = virtualEdges.get(i * 4 + VE_BASE_REV);
-            if (edgeFilter.accept(baseRevEdge)) {
-                virtEdgeIter.add(baseRevEdge);
-            } else {
-                baseRevEdge = null;
-            }
-
-
-            EdgeIteratorState adjEdge = virtualEdges.get(i * 4 + VE_ADJ);
-            if (edgeFilter.accept(adjEdge)) {
-                virtEdgeIter.add(adjEdge);
-            } else {
-                adjEdge = null;
-            }
-
-
-            // create incoming edges
-            EdgeIteratorState baseEdge = virtualEdges.get(i * 4 + VE_BASE);
-            if (edgeFilter.accept(baseEdge)) {
-                virtEdgeIter.add(baseEdge);
-            } else {
-                baseEdge = null;
-            }
-
-            EdgeIteratorState adjRevEdge = virtualEdges.get(i * 4 + VE_ADJ_REV);
-            if (edgeFilter.accept(adjRevEdge)) {
-                virtEdgeIter.add(adjRevEdge);
-            } else {
-                adjRevEdge = null;
-            }
-
-
-            node2EdgeMap.put(virtNode, virtEdgeIter);
-
-            // replace edge list of neighboring tower nodes: 
-            // add virtual edges only and collect tower nodes where real edges will be added in step 2.
-            //
-            // base node
-            int towerNode;
-            if (baseRevEdge != null) {
-                towerNode = baseRevEdge.getAdjNode();
-                if (!isVirtualNode(towerNode)) {
-                    towerNodesToChange.add(towerNode);
-                    addVirtualEdges(node2EdgeMap, edgeFilter, virtualEdges.get(i * 4 + VE_BASE), towerNode, i);
-                }
-            }
-
-            // adj node
-            if (adjEdge != null) {
-                towerNode = adjEdge.getAdjNode();
-                if (!isVirtualNode(towerNode)) {
-                    towerNodesToChange.add(towerNode);
-                    addVirtualEdges(node2EdgeMap, edgeFilter, virtualEdges.get(i * 4 + VE_ADJ_REV), towerNode, i);
-                }
-            }
-
-            if (baseEdge != null) {
-                towerNode = baseEdge.getBaseNode();
-                if (!isVirtualNode(towerNode)) {
-                    towerNodesToChange.add(towerNode);
-                    addVirtualEdges(node2EdgeMap, edgeFilter, virtualEdges.get(i * 4 + VE_BASE_REV), towerNode, i);
-                }
-            }
-
-            if (adjRevEdge != null) {
-                towerNode = adjRevEdge.getBaseNode();
-                if (!isVirtualNode(towerNode)) {
-                    towerNodesToChange.add(towerNode);
-                    addVirtualEdges(node2EdgeMap, edgeFilter, virtualEdges.get(i * 4 + VE_ADJ), towerNode, i);
-                }
-            }
-
-            */
 
 
         }

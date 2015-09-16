@@ -2,6 +2,7 @@ package com.graphhopper.routing.util;
 
 import com.graphhopper.reader.OSMRelation;
 import com.graphhopper.reader.OSMWay;
+import com.graphhopper.util.EdgeIteratorState;
 import com.graphhopper.util.Helper;
 
 import java.util.*;
@@ -228,6 +229,26 @@ public class GarbageVehicleFlagEncoder extends AbstractFlagEncoder {
         }
 
         return encoded;
+    }
+
+
+    public void applyWayTags(OSMWay way, EdgeIteratorState edge) {
+        if (way.getTag("lanes") != null) {
+            try {
+                int lanes = Integer.valueOf(way.getTag("lanes"));
+                edge.setAdditionalField(lanes);
+            } catch (Exception e) {
+                StringTokenizer t = new StringTokenizer(way.getTag("lanes"), ",;");
+                String n = "0";
+                while (t.hasMoreElements()) {
+                    n = (String) t.nextElement();
+                }
+                edge.setAdditionalField(Integer.valueOf(way.getTag(n)));
+
+                System.err.println(e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     public String getWayInfo(OSMWay way) {

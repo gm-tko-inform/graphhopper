@@ -71,6 +71,38 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.80913163282477, 49.199631214141846));
 //        ghPoints.add(new GHPoint(55.8089567889356, 49.19753909111023));
 
+        // Каспийская (без количества полос - одно ребро лево-лево)
+//        ghPoints.add(new GHPoint(55.81173008219259, 49.20269429683685));
+//        ghPoints.add(new GHPoint(55.811431661210115, 49.20191109180450));
+
+        // Каспийская (без количества полос - одно ребро лево-право)
+//        ghPoints.add(new GHPoint(55.81173008219259, 49.20269429683685));
+//        ghPoints.add(new GHPoint(55.81156730739489, 49.20174211263656));
+
+        // Каспийская (без количества полос - одно ребро право-право)
+//        ghPoints.add(new GHPoint(55.81193204256935,  49.20247972011566));
+//        ghPoints.add(new GHPoint(55.81193204256935, 49.20174211263656));
+
+        // Каспийская (без количества полос - одно ребро право-лево)
+//        ghPoints.add(new GHPoint(55.81193204256935,  49.20247972011566));
+//        ghPoints.add(new GHPoint(55.811431661210115, 49.20191109180450));
+
+
+
+
+        // Коновалова (без полос, с лева на лево)
+//        ghPoints.add(new GHPoint(55.81338793487428, 49.201626777648926));
+//        ghPoints.add(new GHPoint(55.815365208637346, 49.2003071308136));
+
+        // Коновалова (без полос наоборот)
+        ghPoints.add(new GHPoint(55.815365208637346, 49.2003071308136));
+        ghPoints.add(new GHPoint(55.81338793487428, 49.201626777648926));
+
+
+        // Арбузова на оборонную
+//        ghPoints.add(new GHPoint(55.81244296750008, 49.1950660943985));
+//        ghPoints.add(new GHPoint(55.812381174575904, 49.19336557388306));
+
         // Губкина (на одной стороне)
 //        ghPoints.add(new GHPoint(55.80913163282477, 49.199631214141846));
 //        ghPoints.add(new GHPoint(55.80874576940273, 49.19776439666747));
@@ -105,8 +137,8 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.86500221855593, 49.079438745975494));
 
         // Беломорская, одностороннее движение с обеими точками по правую сторону
-        ghPoints.add(new GHPoint(55.8643444810755,  49.084650278091424));
-        ghPoints.add(new GHPoint(55.864710226632674, 49.08297657966614));
+//        ghPoints.add(new GHPoint(55.8643444810755,  49.084650278091424));
+//        ghPoints.add(new GHPoint(55.864710226632674, 49.08297657966614));
 
 
 
@@ -128,8 +160,10 @@ public class TelecorTest {
 
         // Нижний
         // Корейская 20, Гжатскяа, 4
-//        ghPoints.add(new GHPoint(56.2750766356292, 43.9907866716385));
-//        ghPoints.add(new GHPoint(56.2753029902075, 43.9913884084672));
+//        ghPoints.add(new GHPoint(56.274996219864335, 43.990872502326965));
+//        ghPoints.add(new GHPoint(56.275514451826986, 43.991392850875854));
+
+
 
         // Тест на одном ребре (слева)
 //        ghPoints.add(new GHPoint(56.2623, 43.9770));
@@ -164,6 +198,9 @@ public class TelecorTest {
 
         Feature feature = new Feature();
         feature.setProperty("route", "line");
+        feature.setProperty("stroke", "#0000ff");
+        feature.setProperty("stroke-width", 5);
+        feature.setProperty("stroke-opacity", 0.4);
         MultiLineString multiLineString = new MultiLineString();
         feature.setGeometry(multiLineString);
         featureCollection.add(feature);
@@ -176,7 +213,9 @@ public class TelecorTest {
 
         feature = new Feature();
         feature.setProperty("route", "start");
-        feature.setProperty("marker-symbol", "triangle");
+        feature.setProperty("marker-color", "#0101fc");
+        feature.setProperty("marker-size", "small");
+        feature.setProperty("marker-symbol", "1");
         feature.setGeometry(
                 new Point(ghPoints.get(0).getLon(), ghPoints.get(0).getLat())
         );
@@ -187,7 +226,9 @@ public class TelecorTest {
                 new Point(ghPoints.get(1).getLon(), ghPoints.get(1).getLat())
         );
         feature.setProperty("route", "end");
-        feature.setProperty("marker-symbol", "square");
+        feature.setProperty("marker-color", "#0101fc");
+        feature.setProperty("marker-size", "small");
+        feature.setProperty("marker-symbol", "2");
         featureCollection.add(feature);
 
         String geoJson = toJsonString(featureCollection);

@@ -219,7 +219,7 @@ public class TurnCostExtension implements GraphExtension
     @Override
     public boolean isRequireEdgeField()
     {
-        return false;
+        return true;
     }
 
     @Override
@@ -231,7 +231,7 @@ public class TurnCostExtension implements GraphExtension
     @Override
     public int getDefaultEdgeFieldValue()
     {
-        throw new UnsupportedOperationException("Not supported by this storage");
+        return -1;
     }
 
     @Override

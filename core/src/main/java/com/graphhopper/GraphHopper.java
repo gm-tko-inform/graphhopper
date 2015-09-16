@@ -192,7 +192,7 @@ public class GraphHopper implements GraphHopperAPI
      */
     public GraphHopper forServer()
     {
-        setSimplifyResponse(true);
+        setSimplifyResponse(false);
         return setInMemory();
     }
 

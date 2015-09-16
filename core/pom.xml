@@ -5,7 +5,7 @@
 
     <artifactId>graphhopper-gm</artifactId>
     <name>GraphHopper</name>
-    <version>1.0.6</version>
+    <version>1.0.7</version>
     <packaging>jar</packaging> 
     <description>
         GraphHopper is a fast and memory efficient Java road routing engine 

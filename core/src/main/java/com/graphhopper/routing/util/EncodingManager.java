@@ -392,6 +392,7 @@ public class EncodingManager
             edge.setName(name);
         }
 
+
         for (AbstractFlagEncoder encoder : edgeEncoders)
         {
             encoder.applyWayTags(way, edge);
