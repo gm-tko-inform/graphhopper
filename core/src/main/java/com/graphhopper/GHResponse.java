@@ -35,11 +35,18 @@ public class GHResponse
     private PointList list = PointList.EMPTY;
     private double distance;
     private double routeWeight;
+    private int leftTurnCount;
+    private int rightTurnCount;
     private long time;
     private InstructionList instructions = null;
 
     public GHResponse()
     {
+    }
+
+    public int getCrossTurnCount() {
+        // Пока рассматриваю только правостороннее движение, соответственно crossTurn = leftTurn
+        return getLeftTurnCount();
     }
 
     public String getDebugInfo()
@@ -203,5 +210,21 @@ public class GHResponse
             throw new IllegalArgumentException("To access instructions you need to enable creation before routing");
 
         return instructions;
+    }
+
+    public int getLeftTurnCount() {
+        return leftTurnCount;
+    }
+
+    public void setLeftTurnCount(int leftTurnCount) {
+        this.leftTurnCount = leftTurnCount;
+    }
+
+    public int getRightTurnCount() {
+        return rightTurnCount;
+    }
+
+    public void setRightTurnCount(int rightTurnCount) {
+        this.rightTurnCount = rightTurnCount;
     }
 }

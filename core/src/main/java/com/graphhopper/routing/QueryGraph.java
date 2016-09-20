@@ -151,8 +151,12 @@ public class QueryGraph implements Graph {
             // Do not create virtual node for a query result if it is directly on a tower node or not found
             EdgeIteratorState closestEdge = res.getClosestEdge();
 
-            if (res.getSnappedPosition() == QueryResult.Position.TOWER)
-                continue;
+            if (res.getSnappedPosition() == QueryResult.Position.TOWER) {
+                // Временный хак. Сдвигаю на мизер точку
+                // todo - это убрать, а вставить нормальную обработку точек, попадающих в узел
+                throw new TowerException(res);
+            }
+
 
             if (closestEdge == null)
                 throw new IllegalStateException("Do not call QueryGraph.lookup with invalid QueryResult " + res);

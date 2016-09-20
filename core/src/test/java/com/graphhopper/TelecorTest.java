@@ -9,7 +9,6 @@ import org.geojson.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -47,8 +46,8 @@ public class TelecorTest {
                 .setEncodingManager(
                         new EncodingManager("gv|turnCosts=true")
                 )
-                .setOSMFile("D:\\Projects\\graphhopper\\data\\map_"+city+".pbf")
-                .setGraphHopperLocation("D:\\Projects\\graphhopper\\data\\cache_"+ city)
+                .setOSMFile("D:\\Projects\\graphhopper\\data\\map_" + city + ".pbf")
+                .setGraphHopperLocation("D:\\Projects\\graphhopper\\data\\cache_" + city)
                 .setCHEnable(false)
                 .forServer();
 
@@ -66,6 +65,30 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.841541, 49.200768));
 //        ghPoints.add(new GHPoint(55.83949, 49.198635));
 //        ghPoints.add(new GHPoint(55.839883, 49.199058));
+
+
+        //
+        //ghPoints.add(new GHPoint(55.8403358459473, 49.0633659362793));
+        //ghPoints.add(new GHPoint(55.8391227722168, 49.067081451416));
+
+
+//        ghPoints.add(new GHPoint(55.8119, 49.1881));
+//        ghPoints.add(new GHPoint(55.8115, 49.1854));
+
+        ghPoints.add(new GHPoint(55.8115, 49.1854));
+        ghPoints.add(new GHPoint(55.8119, 49.1881));
+
+
+
+
+        // Ломающие алгоритм точки (попадание проекции в TOWER)
+//        ghPoints.add(new GHPoint(55.780338287353516, 49.20789337158203));
+//        ghPoints.add(new GHPoint(55.78004455566406,49.22832107543945));
+
+
+        // Проверка закрытого проезда
+//          ghPoints.add(new GHPoint(56.2795104980469,43.9863433837891));
+//          ghPoints.add(new GHPoint(56.2784729003906,43.9804649353027));
 
 //        Губкина (на другую сторону)
 //        ghPoints.add(new GHPoint(55.80913163282477, 49.199631214141846));
@@ -88,15 +111,19 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.811431661210115, 49.20191109180450));
 
 
-
-
         // Коновалова (без полос, с лева на лево)
 //        ghPoints.add(new GHPoint(55.81338793487428, 49.201626777648926));
 //        ghPoints.add(new GHPoint(55.815365208637346, 49.2003071308136));
 
         // Коновалова (без полос наоборот)
-        ghPoints.add(new GHPoint(55.815365208637346, 49.2003071308136));
-        ghPoints.add(new GHPoint(55.81338793487428, 49.201626777648926));
+//        ghPoints.add(new GHPoint(55.815365208637346, 49.2003071308136));
+//        ghPoints.add(new GHPoint(55.81338793487428, 49.201626777648926));
+
+        //ghPoints.add(new GHPoint(55.8079, 49.1998));
+        //ghPoints.add(new GHPoint(55.8085, 49.1995));
+
+
+
 
 
         // Арбузова на оборонную
@@ -141,15 +168,6 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.864710226632674, 49.08297657966614));
 
 
-
-
-
-
-
-
-
-
-
         // Нагорный - утренняя
 //        ghPoints.add(new GHPoint(55.84831301444013, 49.22209739685058));
 //        ghPoints.add(new GHPoint(55.85387788266578, 49.24522876739502));
@@ -158,12 +176,13 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.8161890377329, 37.38191619515419));
 //        ghPoints.add(new GHPoint(55.773824, 37.490362));
 
+
+
+
         // Нижний
         // Корейская 20, Гжатскяа, 4
 //        ghPoints.add(new GHPoint(56.274996219864335, 43.990872502326965));
 //        ghPoints.add(new GHPoint(56.275514451826986, 43.991392850875854));
-
-
 
         // Тест на одном ребре (слева)
 //        ghPoints.add(new GHPoint(56.2623, 43.9770));
@@ -177,9 +196,9 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(56.29425245558566, 44.00144577026367));
 //        ghPoints.add(new GHPoint(56.29368089320706, 44.02517795562744));
 
-
-
-
+        // улица Коминтерна, 41 -- проспект Гагарина, 82
+//        ghPoints.add(new GHPoint(56.343533, 43.882432));
+//        ghPoints.add(new GHPoint(56.278453, 43.980079));
 
 
         GHRequest request = new GHRequest(
@@ -233,7 +252,9 @@ public class TelecorTest {
 
         String geoJson = toJsonString(featureCollection);
         System.out.println(geoJson);
-        System.out.println("distance="+ghResponse.getDistance());
+
+        System.out.println("distance=" + ghResponse.getDistance());
+        System.out.printf("milis" + ghResponse.getMillis());
 
     }
 }
