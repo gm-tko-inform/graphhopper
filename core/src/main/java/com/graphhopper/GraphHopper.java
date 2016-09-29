@@ -786,8 +786,9 @@ public class GraphHopper implements GraphHopperAPI {
     public GHResponse route(GHRequest request) {
         GHResponse response = new GHResponse();
         List<Path> paths = getPaths(request, response);
-        if (response.hasErrors())
+        if (response.hasErrors()) {
             return response;
+        }
 
         boolean tmpEnableInstructions = request.getHints().getBool("instructions", enableInstructions);
         boolean tmpCalcPoints = request.getHints().getBool("calcPoints", calcPoints);
@@ -802,14 +803,21 @@ public class GraphHopper implements GraphHopperAPI {
                 setSimplifyResponse(simplifyResponse && wayPointMaxDistance > 0).
                 doWork(response, paths, trMap.getWithFallBack(locale));
 
-        System.out.println(response.getInstructions().createJson());
+        if (response.hasErrors()) {
+            return response;
+        }
+
+        System.err.println(response.getInstructions().toString());
+
         for (int i = 0; i < response.getInstructions().getSize(); i++) {
             Instruction instruction = response.getInstructions().get(i);
             switch (instruction.getSign()) {
                 case Instruction.TURN_LEFT:
+                case Instruction.TURN_SHARP_LEFT:
                     response.setLeftTurnCount(response.getLeftTurnCount() + 1);
                     break;
                 case Instruction.TURN_RIGHT:
+                case Instruction.TURN_SHARP_RIGHT:
                     response.setRightTurnCount(response.getRightTurnCount() + 1);
                     break;
             }
@@ -817,6 +825,7 @@ public class GraphHopper implements GraphHopperAPI {
         }
 //        System.out.println("left "+ response.getLeftTurnCount());
 //        System.out.println("right "+ response.getRightTurnCount());
+//        System.out.println("cross "+response.getCrossTurnCount());
 
         return response;
     }
@@ -892,31 +901,39 @@ public class GraphHopper implements GraphHopperAPI {
             // temp hack
             // Сдвигаю точку на мизер
             // todo - это убрать, а вставить нормальную обработку точек, попадающих в узел
-            qResults = new ArrayList<QueryResult>(points.size());
-            for (int placeIndex = 0; placeIndex < points.size(); placeIndex++) {
-                GHPoint point = points.get(placeIndex);
-                QueryResult res;
-                if (point.getLon() == e.getRes().getQueryPoint().getLon() && point.getLat() == e.getRes().getQueryPoint().getLat()) {
-                    res = locationIndex.findClosest(point.lat + 0.00005, point.lon + 0.00005, edgeFilter);
-                } else {
-                    res = locationIndex.findClosest(point.lat, point.lon, edgeFilter);
-                }
-                if (!res.isValid())
-                    rsp.addError(new IllegalArgumentException("Cannot find point " + placeIndex + ": " + point));
 
-                qResults.add(res);
-            }
+            for (int ind = 0; ind < 10; ind++) {
+                qResults = new ArrayList<QueryResult>(points.size());
+                for (int placeIndex = 0; placeIndex < points.size(); placeIndex++) {
+                    GHPoint point = points.get(placeIndex);
+                    QueryResult res;
+                    if (point.getLon() == e.getRes().getQueryPoint().getLon() && point.getLat() == e.getRes().getQueryPoint().getLat()) {
+                        res = locationIndex.findClosest(point.lat + 0.00005 + ind / 10000, point.lon + 0.00005, edgeFilter);
+                    } else {
+                        res = locationIndex.findClosest(point.lat, point.lon, edgeFilter);
+                    }
+                    if (!res.isValid())
+                        rsp.addError(new IllegalArgumentException("Cannot find point " + placeIndex + ": " + point));
+
+                    qResults.add(res);
+                }
 //            tmpAlgoFactory = getAlgorithmFactory();
-            if (chEnabled && !vehicle.equalsIgnoreCase(getDefaultVehicle().toString())) {
-                // fall back to normal traversing
-                tmpAlgoFactory = new RoutingAlgorithmFactorySimple();
-                queryGraph = new QueryGraph(graph.getBaseGraph());
-                queryGraph.setEncoder(encoder);
-            } else {
-                queryGraph = new QueryGraph(graph);
-                queryGraph.setEncoder(encoder);
+                if (chEnabled && !vehicle.equalsIgnoreCase(getDefaultVehicle().toString())) {
+                    // fall back to normal traversing
+                    tmpAlgoFactory = new RoutingAlgorithmFactorySimple();
+                    queryGraph = new QueryGraph(graph.getBaseGraph());
+                    queryGraph.setEncoder(encoder);
+                } else {
+                    queryGraph = new QueryGraph(graph);
+                    queryGraph.setEncoder(encoder);
+                }
+                try {
+                    queryGraph.lookup(qResults);
+                } catch (TowerException e1) {
+                    continue;
+                }
+                break;
             }
-            queryGraph.lookup(qResults);
         }
 
         List<Path> paths = new ArrayList<Path>(points.size() - 1);

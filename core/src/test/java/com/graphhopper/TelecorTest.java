@@ -40,6 +40,7 @@ public class TelecorTest {
 
 //        String city = "nn";
         String city = "kzn";
+//        String city = "ru";
 
         graphHopper.setGraphHopperLocation("gh-problem")
                 .setInMemory()
@@ -75,8 +76,12 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.8119, 49.1881));
 //        ghPoints.add(new GHPoint(55.8115, 49.1854));
 
-        ghPoints.add(new GHPoint(55.8115, 49.1854));
-        ghPoints.add(new GHPoint(55.8119, 49.1881));
+//        ghPoints.add(new GHPoint(55.8115, 49.1854));
+//        ghPoints.add(new GHPoint(55.8119, 49.1881));
+
+//        LAST ERROR
+//        ghPoints.add(new GHPoint(55.822292, 49.13693));
+//        ghPoints.add(new GHPoint(55.834503, 49.135513));
 
 
 
@@ -121,6 +126,18 @@ public class TelecorTest {
 
         //ghPoints.add(new GHPoint(55.8079, 49.1998));
         //ghPoints.add(new GHPoint(55.8085, 49.1995));
+
+
+        // С разворотами
+//        ghPoints.add(new GHPoint(55.7997, 49.1899));
+//        ghPoints.add(new GHPoint(55.8005, 49.1888));
+
+        // Губкина с разворотом (2 широкий)
+//        ghPoints.add(new GHPoint(55.8060, 49.1923));
+//        ghPoints.add(new GHPoint(55.8061, 49.1919));
+        // Губкина с разворотом (узкий)
+        ghPoints.add(new GHPoint(55.8081, 49.1968));
+        ghPoints.add(new GHPoint(55.8086, 49.1962));
 
 
 
@@ -210,6 +227,11 @@ public class TelecorTest {
 //                55.8412, 49.200432
 //        );
         GHResponse ghResponse = graphHopper.route(request);
+        List<Throwable> exceptions = ghResponse.getErrors();
+        for (Throwable exception : exceptions) {
+            System.err.println("EXCEPTION !!!!!!!!!!!!!");
+            exception.printStackTrace();
+        }
 
         PointList pointList = ghResponse.getPoints();
 
@@ -254,7 +276,9 @@ public class TelecorTest {
         System.out.println(geoJson);
 
         System.out.println("distance=" + ghResponse.getDistance());
-        System.out.printf("milis" + ghResponse.getMillis());
+        System.out.println("milis=" + ghResponse.getMillis());
+        System.out.println("leftTurn=" + ghResponse.getLeftTurnCount());
+        System.out.println("rightTurn=" + ghResponse.getRightTurnCount());
 
     }
 }
