@@ -39,8 +39,8 @@ public class TelecorTest {
         graphHopper = new GraphHopper();
 
 //        String city = "nn";
-        String city = "kzn";
-//        String city = "ru";
+//        String city = "kzn";
+        String city = "ru";
 
         graphHopper.setGraphHopperLocation("gh-problem")
                 .setInMemory()
@@ -71,6 +71,11 @@ public class TelecorTest {
         //
         //ghPoints.add(new GHPoint(55.8403358459473, 49.0633659362793));
         //ghPoints.add(new GHPoint(55.8391227722168, 49.067081451416));
+
+
+        // 2016-12-15 19:33:56,452 | ERROR | GraphHopperRoutingRequester.requestRouteInfo[51]  | 83 км Белорусской ж/д[55.708603, 36.28061] -> Руза, Федеративная улица[55.704086, 36.193798], First cause: java.lang.IllegalArgumentException: Cannot find point 0: 55.70860290527344,36.280609130859375, using manhattan
+        ghPoints.add(new GHPoint(55.708603, 36.28061));
+        ghPoints.add(new GHPoint(55.704086, 36.193798));
 
 
 //        ghPoints.add(new GHPoint(55.8119, 49.1881));
@@ -136,8 +141,8 @@ public class TelecorTest {
 //        ghPoints.add(new GHPoint(55.8060, 49.1923));
 //        ghPoints.add(new GHPoint(55.8061, 49.1919));
         // Губкина с разворотом (узкий)
-        ghPoints.add(new GHPoint(55.8081, 49.1968));
-        ghPoints.add(new GHPoint(55.8086, 49.1962));
+//        ghPoints.add(new GHPoint(55.8081, 49.1968));
+//        ghPoints.add(new GHPoint(55.8086, 49.1962));
 
 
 
